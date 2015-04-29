@@ -24,6 +24,9 @@ P2LX lx;
 // Setup establishes the windowing and LX constructs
 void setup() {
   size(800, 600, OPENGL);
+  frameRate(60);
+  noSmooth();
+  lines = loadStrings("led_positions_wholebrain.csv");
   
   // Create the model, which describes where our light points are
   model = new Model();
@@ -34,6 +37,7 @@ void setup() {
   // Set the patterns
   lx.setPatterns(new LXPattern[] {
     new LayerDemoPattern(lx),
+    new TestHuePattern(lx),
     new IteratorTestPattern(lx).setTransition(new DissolveTransition(lx)),
   });
   
@@ -70,16 +74,18 @@ void setup() {
     .setRotateAcceleration(3*PI)
     
     // Let's add a point cloud of our animation points
-    .addComponent(new UIPointCloud(lx, model).setPointWeight(3))
+    .addComponent(new UIPointCloud(lx, model).setPointWeight(1))
     
     // And a custom UI object of our own
-    .addComponent(new UIWalls())
+   // .addComponent(new UIWalls())
   );
   
   // A basic built-in 2-D control for a channel
   lx.ui.addLayer(new UIChannelControl(lx.ui, lx.engine.getChannel(0), 4, 4));
   lx.ui.addLayer(new UIEngineControl(lx.ui, 4, 326));
   lx.ui.addLayer(new UIComponentsDemo(lx.ui, width-144, 4));
+  lx.engine.framesPerSecond.setValue(60);
+  lx.engine.setThreaded(false);
 }
 
 void draw() {

@@ -102,3 +102,30 @@ class LayerDemoPattern extends LXPattern {
     }
   }
 }
+
+
+abstract class TestPattern extends LXPattern {
+  public TestPattern(LX lx) {
+    super(lx);
+    setEligible(false);
+  }
+}
+
+/**
+ * Simplest demonstration of using the rotating master hue.
+ * All pixels are full-on the same color.
+ */
+class TestHuePattern extends TestPattern {
+  public TestHuePattern(LX lx) {
+    super(lx);
+  }
+  
+  public void run(double deltaMs) {
+    // Access the core master hue via this method call
+    float hv = lx.getBaseHuef();
+    for (int i = 0; i < colors.length; ++i) {
+      colors[i] = lx.hsb(hv, 100, 100);
+    }
+  } 
+}
+

@@ -1,9 +1,12 @@
 /**
- * This is a very basic model class that is a 3-D matrix
- * of points. The model contains just one fixture.
+ * This is a very basic model OF A BRAIN!
  */
+import java.io.*;
+import java.nio.file.*;
+
+static String lines[];
+
 static class Model extends LXModel {
-  
   public Model() {
     super(new Fixture());
   }
@@ -13,16 +16,27 @@ static class Model extends LXModel {
     private static final int MATRIX_SIZE = 12;
     
     private Fixture() {
-      // Here's the core loop where we generate the positions
-      // of the points in our model
-      for (int x = 0; x < MATRIX_SIZE; ++x) {
-        for (int y = 0; y < MATRIX_SIZE; ++y) {
-          for (int z = 0; z < MATRIX_SIZE; ++z) {
-            // Add point to the fixture
-            addPoint(new LXPoint(x*FEET, y*FEET, z*FEET));
+      BufferedReader br = null;
+      String line = "";
+      String cvsSplitBy = ",";
+
+      try {
+        for (int i=0; i<lines.length; i++) {
+            // use comma as separator
+          String[] floats = lines[i].split(cvsSplitBy);
+          addPoint(new LXPoint(Double.parseDouble(floats[1]), Double.parseDouble(floats[2]), Double.parseDouble(floats[3])));
+        }
+      } finally {
+        if (br != null) {
+          try {
+            br.close();
+          } catch (IOException e) {
+            e.printStackTrace();
           }
         }
       }
+
+      System.out.println("Done");
     }
   }
 }
