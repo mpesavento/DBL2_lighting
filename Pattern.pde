@@ -129,3 +129,33 @@ class TestHuePattern extends TestPattern {
   } 
 }
 
+
+/**
+ * Test of a wave moving across the X axis.
+ */
+class TestXPattern extends TestPattern {
+  private final SinLFO xPos = new SinLFO(0, model.xMax, 4000);
+  public TestXPattern(LX lx) {
+    super(lx);
+    addModulator(xPos).trigger();
+  }
+  public void run(double deltaMs) {
+    System.out.println("model points: " + model.points.size());
+    System.out.println("colors length: " + colors.length);
+    float hv = lx.getBaseHuef();
+    int i = 0;
+    for (LXPoint p : model.points) {
+      // This is a common technique for modulating brightness.
+      // You can use abs() to determine the distance between two
+      // values. The further away this point is from an exact
+      // point, the more we decrease its brightness
+      float bv = max(0, 100 - abs(p.x - xPos.getValuef()));
+      if (i < 10) {
+        i += 1;
+        System.out.println("index: " + p.index);
+      }
+      colors[p.index] = lx.hsb(hv, 100, bv);
+    }
+  }
+}
+

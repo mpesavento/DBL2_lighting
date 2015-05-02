@@ -3,6 +3,41 @@
  * rendered inside the camera view context. We just override the
  * onDraw method and invoke Processing drawing methods directly.
  */
+
+import java.nio.*;
+import java.util.Arrays;
+
+
+
+
+
+class UIBrainComponent extends UI3dComponent {
+ 
+  final UIPointCloudVBO pointCloud = new UIPointCloudVBO();
+  
+  void onDraw(UI ui, PGraphics pg) {
+    color[] simulationColors = lx.getColors();
+    simulationColors = lx.engine.getChannel(0).getColors();
+    long simulationStart = System.nanoTime();
+    translate(-50, 40, -330); //viewpoint could use some adjusting
+    rotateX(PI*1.4);          
+    drawSimulation(simulationColors);
+    camera(); 
+    strokeWeight(1);
+  }
+  
+  void drawSimulation(color[] simulationColors) {
+
+    noStroke();
+    noFill();
+    pointCloud.draw(simulationColors);
+  }
+}
+
+
+
+
+ 
 class UIWalls extends UI3dComponent {
   
   private final float WALL_MARGIN = 2*FEET;
@@ -131,3 +166,80 @@ class UIComponentsDemo extends UIWindow {
     setSize(width, y);
   }
 } 
+
+
+class UIPointCloudVBO {
+
+  PShader shader;
+  FloatBuffer vertexData;
+  int vertexBufferObjectName;
+  
+  UIPointCloudVBO() {
+    // Load shader
+    shader = loadShader("frag.glsl", "vert.glsl");
+    // Create a buffer for vertex data
+    vertexData = ByteBuffer
+      .allocateDirect(model.points.size() * 7 * Float.SIZE/8)
+      .order(ByteOrder.nativeOrder())
+      .asFloatBuffer();
+    
+    // Put all the points into the buffer
+    vertexData.rewind();
+    for (LXPoint point : model.points) {
+      // Each point has 7 floats, XYZRGBA
+      vertexData.put(point.x);
+      vertexData.put(point.y);
+      vertexData.put(point.z);
+      vertexData.put(0f);
+      vertexData.put(0f);
+      vertexData.put(0f);
+      vertexData.put(1f);
+    }
+    vertexData.position(0);
+    
+    // Generate a buffer binding
+    IntBuffer resultBuffer = ByteBuffer
+      .allocateDirect(1 * Integer.SIZE/8)
+      .order(ByteOrder.nativeOrder())
+      .asIntBuffer();
+    
+    PGL pgl = beginPGL();
+    pgl.genBuffers(1, resultBuffer); // Generates a buffer, places its id in resultBuffer[0]
+    vertexBufferObjectName = resultBuffer.get(0); // Grab our buffer name
+    endPGL();
+  }
+  
+  void draw(color[] colors) {
+    // Put our new colors in the vertex data
+    for (int i = 0; i < colors.length; ++i) {
+      color c = colors[i];
+
+      vertexData.put(7*i + 3, (0xff & (c >> 16)) / 255f); // R
+      vertexData.put(7*i + 4, (0xff & (c >> 8)) / 255f); // G
+      vertexData.put(7*i + 5, (0xff & (c)) / 255f); // B
+    }
+    
+    PGL pgl = beginPGL();
+    
+    // Bind to our vertex buffer object, place the new color data
+    pgl.bindBuffer(PGL.ARRAY_BUFFER, vertexBufferObjectName);
+    pgl.bufferData(PGL.ARRAY_BUFFER, colors.length * 7 * Float.SIZE/8, vertexData, PGL.DYNAMIC_DRAW);
+    
+    shader.bind();
+    int vertexLocation = pgl.getAttribLocation(shader.glProgram, "vertex");
+    int colorLocation = pgl.getAttribLocation(shader.glProgram, "color");
+    pgl.enableVertexAttribArray(vertexLocation);
+    pgl.enableVertexAttribArray(colorLocation);
+    pgl.vertexAttribPointer(vertexLocation, 3, PGL.FLOAT, false, 7 * Float.SIZE/8, 0);
+    pgl.vertexAttribPointer(colorLocation, 4, PGL.FLOAT, false, 7 * Float.SIZE/8, 3 * Float.SIZE/8);
+    javax.media.opengl.GL2 gl2 = (javax.media.opengl.GL2) ((PJOGL)pgl).gl;
+    gl2.glPointSize(2);
+    pgl.drawArrays(PGL.POINTS, 0, colors.length);
+    pgl.disableVertexAttribArray(vertexLocation);
+    pgl.disableVertexAttribArray(colorLocation);
+    shader.unbind();
+    
+    pgl.bindBuffer(PGL.ARRAY_BUFFER, 0);
+    endPGL();
+  }
+}
